@@ -8,6 +8,9 @@
     <title>Weather App</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -75,6 +78,59 @@
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Map Tab Navigation -->
+            <div id="mapNav" class="glass-morphism rounded-3xl p-4 mb-10 fade-in">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <!-- Tab Buttons -->
+                    <div class="flex gap-2 flex-wrap">
+                        <button id="tabMap"
+                            class="tab-btn px-5 py-2 bg-white/10 text-white/70 font-semibold rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-white/40 transition-all duration-300">
+                            🗺️ Map View
+                        </button>
+                        <button id="tabWeather"
+                            class="tab-btn px-5 py-2 bg-white/20 text-white font-semibold rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-white/40 transition-all duration-300">
+                            ⛅ Weather View
+                        </button>
+                    </div>
+                    <!-- Layer Toggle (visible only on map tab) -->
+                    <div id="layerControls" class="hidden flex gap-2 flex-wrap">
+                        <button
+                            class="layer-btn px-3 py-1.5 bg-white/20 text-white text-xs font-medium rounded-lg hover:bg-white/30 transition-all"
+                            data-layer="temp">🌡️ Temp</button>
+                        <button
+                            class="layer-btn px-3 py-1.5 bg-white/20 text-white text-xs font-medium rounded-lg hover:bg-white/30 transition-all"
+                            data-layer="precip">🌧️ Rain</button>
+                        <button
+                            class="layer-btn px-3 py-1.5 bg-white/20 text-white text-xs font-medium rounded-lg hover:bg-white/30 transition-all"
+                            data-layer="wind">💨 Wind</button>
+                        <button
+                            class="layer-btn px-3 py-1.5 bg-white/20 text-white text-xs font-medium rounded-lg hover:bg-white/30 transition-all"
+                            data-layer="clouds">☁️ Clouds</button>
+                        <button id="layerOff"
+                            class="px-3 py-1.5 bg-red-500/30 text-white text-xs font-medium rounded-lg hover:bg-red-500/40 transition-all">✕
+                            Off</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div id="mapSection" class="hidden mb-10 fade-in">
+                <div class="glass-morphism rounded-3xl p-4 overflow-hidden">
+                    <div id="weatherMap" class="w-full h-[400px] md:h-[500px] rounded-2xl z-10"
+                        style="background: rgba(255,255,255,0.05);"></div>
+                    <!-- Map Click Info -->
+                    <div id="mapClickInfo" class="hidden mt-4 glass-card rounded-2xl p-6 slide-up">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-white text-lg font-bold">📍 Location Weather</h4>
+                            <button id="closeMapInfo" class="text-white/60 hover:text-white text-xl">✕</button>
+                        </div>
+                        <div id="mapWeatherContent" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <!-- Weather info will be populated here -->
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Error Message -->

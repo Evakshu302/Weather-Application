@@ -1,6 +1,8 @@
 const API_KEY = '0b5815f56dce418b39afd375d2e0a9a2', body = document.getElementById('body'), form = document.getElementById('weatherForm'), cityInput = document.getElementById('cityInput'), locationBtn = document.getElementById('locationBtn'), aiInsightBtn = document.getElementById('aiInsightBtn'), searchText = document.getElementById('searchText'), loadingSpinner = document.getElementById('loadingSpinner'), errorMessage = document.getElementById('errorMessage'), errorText = document.getElementById('errorText'), currentWeather = document.getElementById('currentWeather'), timeline = document.getElementById('timeline'), aiChatbot = document.getElementById('aiChatbot'), closeChatbot = document.getElementById('closeChatbot'), chatMessages = document.getElementById('chatMessages'), chatInput = document.getElementById('chatInput'), sendChatBtn = document.getElementById('sendChatBtn'), searchHistory = document.getElementById('searchHistory'), historyList = document.getElementById('historyList'), clearHistory = document.getElementById('clearHistory');
 
 let currentWeatherData = null, searchHistoryData = JSON.parse(localStorage.getItem('weatherSearchHistory')) || [];
+let weatherMap = null;
+let weatherLayers = {};
 const weatherIcons = { '01d': '☀️', '01n': '🌙', '02d': '⛅', '02n': '☁️', '03d': '☁️', '03n': '☁️', '04d': '☁️', '04n': '☁️', '09d': '🌧️', '09n': '🌧️', '10d': '🌦️', '10n': '🌧️', '11d': '⛈️', '11n': '⛈️', '13d': '❄️', '13n': '❄️', '50d': '🌫️', '50n': '🌫️' };
 const weatherBackgrounds = { 'clear': 'sunny', 'clouds': 'cloudy', 'rain': 'rainy', 'drizzle': 'rainy', 'thunderstorm': 'rainy', 'snow': 'snowy', 'mist': 'cloudy', 'fog': 'cloudy', 'haze': 'cloudy' };
 
@@ -613,8 +615,163 @@ function updateBackground(weatherType) {
     body.classList.add(bgClass);
 }
 
+// Map Initialization and Functions
+function initWeatherMap() {
+    if (weatherMap) return;
+
+    weatherMap = L.map('weatherMap', {
+        preferCanvas: true,
+        attributionControl: false
+    }).setView([51.505, -0.09], 2); // Default to London
+
+    // Base tile layer (OpenStreetMap)
+    const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(weatherMap);
+
+    // Weather overlay layers
+    const apiKey = API_KEY;
+    const layerUrls = {
+        temp: `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+        precip: `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+        wind: `https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+        clouds: `https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`
+    };
+
+    Object.keys(layerUrls).forEach(key => {
+        weatherLayers[key] = L.tileLayer(layerUrls[key], {
+            opacity: 0.6,
+            attribution: ''
+        });
+    });
+
+    // Add temperature layer by default
+    weatherLayers.temp.addTo(weatherMap);
+
+    // Handle map clicks to get weather at coordinates
+    weatherMap.on('click', async (e) => {
+        const { lat, lng } = e.latlng;
+        await getWeatherDataByCoords(lat, lng);
+
+        // Show map info panel
+        document.getElementById('mapClickInfo').classList.remove('hidden');
+        document.getElementById('mapWeatherContent').innerHTML = `
+            <div class="text-center col-span-2">
+                <div class="text-2xl mb-2">${weatherIcons[currentWeatherData.current.weather[0].icon] || '☀️'}</div>
+                <div class="text-white text-xl font-bold">${Math.round(currentWeatherData.current.main.temp)}°C</div>
+                <div class="text-white/80">${currentWeatherData.current.name}, ${currentWeatherData.current.sys.country}</div>
+                <div class="text-white/60">${currentWeatherData.current.weather[0].description}</div>
+            </div>
+            <div class="text-white text-center">
+                <div class="mb-1">🌡️ Feels Like: ${Math.round(currentWeatherData.current.main.feels_like)}°C</div>
+                <div class="mb-1">💧 Humidity: ${currentWeatherData.current.main.humidity}%</div>
+                <div class="mb-1">💨 Wind: ${currentWeatherData.current.wind.speed} m/s</div>
+                <div class="mb-1">👁️ Visibility: ${(currentWeatherData.current.visibility || 10000) / 1000} km</div>
+                <div class="mb-1">🌅 Sunrise: ${new Date(currentWeatherData.current.sys.sunrise * 1000).toLocaleTimeString()}</div>
+                <div class="mb-1">🌇 Sunset: ${new Date(currentWeatherData.current.sys.sunset * 1000).toLocaleTimeString()}</div>
+            </div>
+        `;
+
+        // Center map on clicked location
+        weatherMap.setView([lat, lng], 10);
+
+        // Switch to weather tab to show details
+        document.getElementById('tabWeather').click();
+    });
+}
+
+function showWeatherLayer(layerName) {
+    // Hide all layers
+    Object.values(weatherLayers).forEach(layer => {
+        if (weatherMap) layer.remove();
+    });
+
+    // Show selected layer
+    if (layerName && weatherLayers[layerName] && weatherMap) {
+        weatherLayers[layerName].addTo(weatherMap);
+
+        // Update active button state
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.classList.toggle('bg-white/30', btn.dataset.layer === layerName);
+            btn.classList.toggle('bg-white/20', btn.dataset.layer !== layerName);
+        });
+
+        // Hide the off button when a layer is active
+        document.getElementById('layerOff').classList.remove('bg-red-500/30');
+        document.getElementById('layerOff').classList.add('bg-white/20');
+    } else {
+        // Show off button when no layer
+        document.getElementById('layerOff').classList.add('bg-red-500/30');
+        document.getElementById('layerOff').classList.remove('bg-white/20');
+    }
+}
+
+// Tab switching functions
+function setupTabNavigation() {
+    document.getElementById('tabMap').addEventListener('click', () => {
+        document.getElementById('tabMap').classList.add('bg-white/20', 'text-white');
+        document.getElementById('tabMap').classList.remove('bg-white/10', 'text-white/70');
+        document.getElementById('tabWeather').classList.add('bg-white/10', 'text-white/70');
+        document.getElementById('tabWeather').classList.remove('bg-white/20', 'text-white');
+
+        document.getElementById('mapNav').classList.remove('hidden');
+        document.getElementById('mapSection').classList.remove('hidden');
+        document.getElementById('layerControls').classList.remove('hidden');
+
+        // Initialize map if not already done
+        if (!weatherMap) initWeatherMap();
+
+        // Hide other sections
+        document.getElementById('currentWeather').classList.add('hidden');
+        document.getElementById('timeline').classList.add('hidden');
+        document.getElementById('aiChatbot').classList.add('hidden');
+        document.getElementById('errorMessage').classList.add('hidden');
+    });
+
+    document.getElementById('tabWeather').addEventListener('click', () => {
+        document.getElementById('tabWeather').classList.add('bg-white/20', 'text-white');
+        document.getElementById('tabWeather').classList.remove('bg-white/10', 'text-white/70');
+        document.getElementById('tabMap').classList.add('bg-white/10', 'text-white/70');
+        document.getElementById('tabMap').classList.remove('bg-white/20', 'text-white');
+
+        document.getElementById('mapNav').classList.add('hidden');
+        document.getElementById('mapSection').classList.add('hidden');
+        document.getElementById('layerControls').classList.add('hidden');
+
+        // Show weather sections
+        document.getElementById('currentWeather').classList.remove('hidden');
+        document.getElementById('timeline').classList.remove('hidden');
+        document.getElementById('errorMessage').classList.remove('hidden');
+
+        // Hide map click info when switching tabs
+        document.getElementById('mapClickInfo').classList.add('hidden');
+    });
+
+    document.getElementById('closeMapInfo').addEventListener('click', () => {
+        document.getElementById('mapClickInfo').classList.add('hidden');
+    });
+
+    // Layer toggle buttons
+    document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const layer = btn.dataset.layer;
+            showWeatherLayer(layer);
+        });
+    });
+
+    document.getElementById('layerOff').addEventListener('click', () => {
+        showWeatherLayer(null);
+    });
+}
+
 // Auto-detect user location on page load
 window.addEventListener('load', () => {
+    // Setup tab navigation
+    setupTabNavigation();
+
+    // Initialize map in background (will be positioned once loaded)
+    initWeatherMap();
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
