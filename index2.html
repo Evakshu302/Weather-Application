@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A beautiful real-time weather app with 7-day forecast, interactive map, and AI weather assistant. Search any city or use your location.">
 
     <title>Weather App</title>
 
@@ -238,7 +239,7 @@
             <div id="timeline" class="hidden slide-up">
                 <div class="text-center mb-8">
                     <h3 class="text-3xl font-black text-white mb-3 tracking-tight">7-Day Weather Timeline</h3>
-                    <p class="text-white/70 text-lg font-light">Past 3 days • Today • Next 3 days</p>
+                    <p class="text-white/70 text-lg font-light">Est. past 3 days &bull; Today &bull; Next 3 days</p>
                 </div>
                 <div class="timeline-scroll overflow-x-auto pb-6">
                     <div id="timelineContainer" class="flex gap-6 min-w-max px-4">
@@ -248,6 +249,11 @@
             </div>
         </div>
     </div>
+    <noscript>
+        <div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#764ba2;color:#fff;font-family:sans-serif;font-size:1.25rem;text-align:center;padding:2rem;z-index:9999">
+            ⚠️ This weather app requires JavaScript. Please enable JavaScript in your browser and reload the page.
+        </div>
+    </noscript>
 </body>
 <script src="weather.js"></script>
 

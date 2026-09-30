@@ -3,7 +3,7 @@ const API_KEY = '0b5815f56dce418b39afd375d2e0a9a2', body = document.getElementBy
 let currentWeatherData = null, searchHistoryData = JSON.parse(localStorage.getItem('weatherSearchHistory')) || [];
 let weatherMap = null;
 let weatherLayers = {};
-const weatherIcons = { '01d': '☀️', '01n': '🌙', '02d': '⛅', '02n': '☁️', '03d': '☁️', '03n': '☁️', '04d': '☁️', '04n': '☁️', '09d': '🌧️', '09n': '🌧️', '10d': '🌦️', '10n': '🌧️', '11d': '⛈️', '11n': '⛈️', '13d': '❄️', '13n': '❄️', '50d': '🌫️', '50n': '🌫️' };
+const weatherIcons = { '01d': 'â˜€ï¸', '01n': 'ðŸŒ™', '02d': 'â›…', '02n': 'â˜ï¸', '03d': 'â˜ï¸', '03n': 'â˜ï¸', '04d': 'â˜ï¸', '04n': 'â˜ï¸', '09d': 'ðŸŒ§ï¸', '09n': 'ðŸŒ§ï¸', '10d': 'ðŸŒ¦ï¸', '10n': 'ðŸŒ§ï¸', '11d': 'â›ˆï¸', '11n': 'â›ˆï¸', '13d': 'â„ï¸', '13n': 'â„ï¸', '50d': 'ðŸŒ«ï¸', '50n': 'ðŸŒ«ï¸' };
 const weatherBackgrounds = { 'clear': 'sunny', 'clouds': 'cloudy', 'rain': 'rainy', 'drizzle': 'rainy', 'thunderstorm': 'rainy', 'snow': 'snowy', 'mist': 'cloudy', 'fog': 'cloudy', 'haze': 'cloudy' };
 
 form.addEventListener('submit', async (e) => {
@@ -53,7 +53,7 @@ locationBtn.addEventListener('click', async () => {
 aiInsightBtn.addEventListener('click', () => {
     aiChatbot.classList.remove('hidden');
     if (currentWeatherData) {
-        addChatMessage('🤖', `I can see you're checking the weather in ${currentWeatherData.current.name}! What would you like to know about the weather conditions?`, 'bot');
+        addChatMessage('ðŸ¤–', `I can see you're checking the weather in ${currentWeatherData.current.name}! What would you like to know about the weather conditions?`, 'bot');
     }
 });
 
@@ -115,7 +115,7 @@ document.addEventListener('click', (e) => {
 });
 
 function showLoading(loading) {
-    searchText.style.display = loading ? 'none' : 'block';
+    searchText.style.display = loading ? 'none' : 'flex';
     loadingSpinner.style.display = loading ? 'block' : 'none';
 }
 
@@ -170,14 +170,14 @@ function displaySearchHistory(filteredData = null) {
 
         historyItem.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <span class="text-white/60">📍</span>
+                        <span class="text-white/60">ðŸ“</span>
                         <div>
                             <div class="text-white font-medium">${item.displayName}</div>
                             <div class="text-white/50 text-xs">${timeAgo}</div>
                         </div>
                     </div>
                     <button class="delete-history opacity-0 group-hover:opacity-100 text-white/40 hover:text-red-400 transition-all duration-200" data-city="${item.city}">
-                        ✕
+                        âœ•
                     </button>
                 `;
 
@@ -238,11 +238,18 @@ async function getWeatherData(city) {
             `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
         );
 
+        if (!forecastResponse.ok) {
+            throw new Error('Forecast data unavailable');
+        }
+
         const forecastData = await forecastResponse.json();
 
         currentWeatherData = {
             current: currentData,
-            forecast: processForecastData(forecastData.list)
+            forecast: processForecastData(forecastData.list),
+            todayPop: forecastData.list.length > 0 && forecastData.list[0].pop !== undefined
+                ? Math.round(forecastData.list[0].pop * 100)
+                : null
         };
 
         displayCurrentWeather(currentData);
@@ -264,6 +271,10 @@ async function getWeatherDataByCoords(lat, lon) {
             `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
         );
 
+        if (!currentResponse.ok) {
+            throw new Error('Location weather unavailable');
+        }
+
         const currentData = await currentResponse.json();
 
         // Get 5-day forecast by coordinates
@@ -271,11 +282,18 @@ async function getWeatherDataByCoords(lat, lon) {
             `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
         );
 
+        if (!forecastResponse.ok) {
+            throw new Error('Forecast data unavailable');
+        }
+
         const forecastData = await forecastResponse.json();
 
         currentWeatherData = {
             current: currentData,
-            forecast: processForecastData(forecastData.list)
+            forecast: processForecastData(forecastData.list),
+            todayPop: forecastData.list.length > 0 && forecastData.list[0].pop !== undefined
+                ? Math.round(forecastData.list[0].pop * 100)
+                : null
         };
 
         cityInput.value = currentData.name;
@@ -359,13 +377,13 @@ function sendChatMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
 
-    addChatMessage('👤', message, 'user');
+    addChatMessage('ðŸ‘¤', message, 'user');
     chatInput.value = '';
 
     // Simulate AI response
     setTimeout(() => {
         const response = generateAIResponse(message);
-        addChatMessage('🤖', response, 'bot');
+        addChatMessage('ðŸ¤–', response, 'bot');
     }, 1000);
 }
 
@@ -408,32 +426,32 @@ function generateAIResponse(userMessage) {
         else if (condition.includes('thunderstorm')) rainChance = 90;
         else if (condition.includes('clouds')) rainChance = 20;
         else rainChance = 5;
-        return `There's a ${rainChance}% chance of rain in ${current.name}. ${rainChance > 50 ? "I'd recommend bringing an umbrella! ☔" : "Looks like you can leave the umbrella at home! ☀️"}`;
+        return `There's a ${rainChance}% chance of rain in ${current.name}. ${rainChance > 50 ? "I'd recommend bringing an umbrella! â˜”" : "Looks like you can leave the umbrella at home! â˜€ï¸"}`;
     }
 
     if (message.includes('temperature') || message.includes('hot') || message.includes('cold')) {
         if (temp < 10) {
-            return `It's quite chilly at ${temp}°C in ${current.name}! I'd recommend wearing warm layers and maybe a hot drink to keep cozy. 🧥☕`;
+            return `It's quite chilly at ${temp}Â°C in ${current.name}! I'd recommend wearing warm layers and maybe a hot drink to keep cozy. ðŸ§¥â˜•`;
         } else if (temp > 25) {
-            return `It's warm at ${temp}°C in ${current.name}! Perfect weather for outdoor activities. Stay hydrated and consider sunscreen! ☀️💧`;
+            return `It's warm at ${temp}Â°C in ${current.name}! Perfect weather for outdoor activities. Stay hydrated and consider sunscreen! â˜€ï¸ðŸ’§`;
         } else {
-            return `The temperature is a pleasant ${temp}°C in ${current.name}. Great weather for most outdoor activities! 🌤️`;
+            return `The temperature is a pleasant ${temp}Â°C in ${current.name}. Great weather for most outdoor activities! ðŸŒ¤ï¸`;
         }
     }
 
     if (message.includes('humidity')) {
         if (humidity > 70) {
-            return `Humidity is quite high at ${humidity}% in ${current.name}. You might feel warmer than the actual temperature. Wear breathable fabrics! 💧`;
+            return `Humidity is quite high at ${humidity}% in ${current.name}. You might feel warmer than the actual temperature. Wear breathable fabrics! ðŸ’§`;
         } else {
-            return `Humidity is comfortable at ${humidity}% in ${current.name}. Perfect conditions for outdoor activities! 🌬️`;
+            return `Humidity is comfortable at ${humidity}% in ${current.name}. Perfect conditions for outdoor activities! ðŸŒ¬ï¸`;
         }
     }
 
     if (message.includes('wind')) {
         if (windSpeed > 8) {
-            return `It's quite windy with speeds of ${windSpeed} m/s in ${current.name}. Be careful with loose items and consider the wind chill! 💨`;
+            return `It's quite windy with speeds of ${windSpeed} m/s in ${current.name}. Be careful with loose items and consider the wind chill! ðŸ’¨`;
         } else {
-            return `Wind is gentle at ${windSpeed} m/s in ${current.name}. Perfect for outdoor activities! 🍃`;
+            return `Wind is gentle at ${windSpeed} m/s in ${current.name}. Perfect for outdoor activities! ðŸƒ`;
         }
     }
 
@@ -446,17 +464,17 @@ function generateAIResponse(userMessage) {
 
         if (condition.includes('rain')) clothing.push('umbrella', 'waterproof jacket');
 
-        return `For ${temp}°C weather in ${current.name}, I'd suggest: ${clothing.join(', ')}. ${condition.includes('rain') ? 'Also bring rain protection! ☔' : ''}`;
+        return `For ${temp}Â°C weather in ${current.name}, I'd suggest: ${clothing.join(', ')}. ${condition.includes('rain') ? 'Also bring rain protection! â˜”' : ''}`;
     }
 
     if (message.includes('activity') || message.includes('do') || message.includes('plan')) {
         const activities = getActivityRecommendations(temp, condition, windSpeed);
-        return `Based on the current weather in ${current.name} (${temp}°C, ${condition}), here are some great activities: ${activities.join(', ')}! 🎯`;
+        return `Based on the current weather in ${current.name} (${temp}Â°C, ${condition}), here are some great activities: ${activities.join(', ')}! ðŸŽ¯`;
     }
 
     // Default responses
     const responses = [
-        `The weather in ${current.name} is ${temp}°C with ${condition} conditions. How can I help you plan your day?`,
+        `The weather in ${current.name} is ${temp}Â°C with ${condition} conditions. How can I help you plan your day?`,
         `Currently it's ${current.weather[0].description} in ${current.name}. What would you like to know about the weather?`,
         `I can help you with weather information for ${current.name}! Ask me about temperature, precipitation, clothing recommendations, or activities.`
     ];
@@ -490,13 +508,6 @@ function getActivityRecommendations(temp, condition, windSpeed) {
     return activities;
 }
 
-function displayAIInsights(insights) {
-    aiContent.innerHTML = insights.map(insight =>
-        `<div class="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">${insight}</div>`
-    ).join('');
-
-    aiInsights.classList.remove('hidden');
-}
 
 function displayCurrentWeather(data) {
     document.getElementById('cityName').textContent = data.name;
@@ -507,23 +518,27 @@ function displayCurrentWeather(data) {
         day: 'numeric'
     });
 
-    document.getElementById('weatherIcon').textContent = weatherIcons[data.weather[0].icon] || '☀️';
-    document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°C`;
+    document.getElementById('weatherIcon').textContent = weatherIcons[data.weather[0].icon] || 'â˜€ï¸';
+    document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}Â°C`;
     document.getElementById('description').textContent = data.weather[0].description;
     document.getElementById('humidity').textContent = `${data.main.humidity}%`;
     document.getElementById('windSpeed').textContent = `${data.wind.speed} m/s`;
 
-    // Display rain chance (calculate from weather conditions)
-    let rainChance = 0;
-    const weatherMain = data.weather[0].main.toLowerCase();
-    if (weatherMain.includes('rain')) rainChance = 80;
-    else if (weatherMain.includes('drizzle')) rainChance = 60;
-    else if (weatherMain.includes('thunderstorm')) rainChance = 90;
-    else if (weatherMain.includes('clouds')) rainChance = 20;
-    else rainChance = 5;
+    // Display rain chance â€“ use real forecast pop data when available, else estimate from condition
+    let rainChance;
+    if (currentWeatherData && currentWeatherData.todayPop !== null && currentWeatherData.todayPop !== undefined) {
+        rainChance = currentWeatherData.todayPop;
+    } else {
+        const weatherMain = data.weather[0].main.toLowerCase();
+        if (weatherMain.includes('thunderstorm')) rainChance = 90;
+        else if (weatherMain.includes('rain')) rainChance = 80;
+        else if (weatherMain.includes('drizzle')) rainChance = 60;
+        else if (weatherMain.includes('clouds')) rainChance = 20;
+        else rainChance = 5;
+    }
     document.getElementById('rainChance').textContent = `${rainChance}%`;
 
-    document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}°C`;
+    document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}Â°C`;
 
     // Display sunrise and sunset times
     const sunrise = new Date(data.sys.sunrise * 1000);
@@ -555,7 +570,7 @@ function displayTimeline(forecastData) {
         dt: today.getTime() / 1000,
         main: {
             temp_max: currentWeatherData ? Math.round(currentWeatherData.current.main.temp) : 20,
-            temp_min: currentWeatherData ? Math.round(currentWeatherData.current.main.temp - 5) : 15
+            temp_min: currentWeatherData ? Math.round(currentWeatherData.current.main.temp_min) : 15
         },
         weather: [{
             main: currentWeatherData ? currentWeatherData.current.weather[0].main : 'Clear',
@@ -585,17 +600,17 @@ function displayTimeline(forecastData) {
             dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
         }
 
-        const weatherIcon = weatherIcons[day.weather[0].icon] || '☀️';
+        const weatherIcon = weatherIcons[day.weather[0].icon] || 'â˜€ï¸';
 
         dayCard.innerHTML = `
                     <div class="text-white/90 text-lg font-bold uppercase tracking-wider mb-4">
                         ${dayName}
                     </div>
                     <div class="text-7xl mb-6 ${isHistorical ? '' : 'pulse-icon'}">${weatherIcon}</div>
-                    <div class="text-white text-3xl font-black mb-2">${Math.round(day.main.temp_max)}°</div>
-                    <div class="text-white/70 text-xl font-medium mb-3">${Math.round(day.main.temp_min)}°</div>
+                    <div class="text-white text-3xl font-black mb-2">${Math.round(day.main.temp_max)}Â°</div>
+                    <div class="text-white/70 text-xl font-medium mb-3">${Math.round(day.main.temp_min)}Â°</div>
                     <div class="text-white/60 text-base capitalize font-medium">${day.weather[0].main}</div>
-                    ${isHistorical ? '<div class="text-white/40 text-base mt-2">Historical</div>' : ''}
+                    ${isHistorical ? '<div class="text-white/40 text-base mt-2">Estimated</div>' : ''}
                 `;
 
         container.appendChild(dayCard);
@@ -605,8 +620,8 @@ function displayTimeline(forecastData) {
 }
 
 function updateBackground(weatherType) {
-    // Remove all weather background classes
-    Object.values(weatherBackgrounds).forEach(bg => {
+    // Remove all weather background classes, including the initial default
+    [...Object.values(weatherBackgrounds), 'default-bg'].forEach(bg => {
         body.classList.remove(bg);
     });
 
@@ -619,10 +634,16 @@ function updateBackground(weatherType) {
 function initWeatherMap() {
     if (weatherMap) return;
 
+    // Centre on the user's current location if already loaded, otherwise world view
+    const center = currentWeatherData
+        ? [currentWeatherData.current.coord.lat, currentWeatherData.current.coord.lon]
+        : [20, 0];
+    const zoom = currentWeatherData ? 8 : 2;
+
     weatherMap = L.map('weatherMap', {
         preferCanvas: true,
         attributionControl: false
-    }).setView([51.505, -0.09], 2); // Default to London
+    }).setView(center, zoom);
 
     // Base tile layer (OpenStreetMap)
     const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -651,32 +672,33 @@ function initWeatherMap() {
     // Handle map clicks to get weather at coordinates
     weatherMap.on('click', async (e) => {
         const { lat, lng } = e.latlng;
-        await getWeatherDataByCoords(lat, lng);
+        try {
+            await getWeatherDataByCoords(lat, lng);
 
-        // Show map info panel
-        document.getElementById('mapClickInfo').classList.remove('hidden');
-        document.getElementById('mapWeatherContent').innerHTML = `
-            <div class="text-center col-span-2">
-                <div class="text-2xl mb-2">${weatherIcons[currentWeatherData.current.weather[0].icon] || '☀️'}</div>
-                <div class="text-white text-xl font-bold">${Math.round(currentWeatherData.current.main.temp)}°C</div>
-                <div class="text-white/80">${currentWeatherData.current.name}, ${currentWeatherData.current.sys.country}</div>
-                <div class="text-white/60">${currentWeatherData.current.weather[0].description}</div>
-            </div>
-            <div class="text-white text-center">
-                <div class="mb-1">🌡️ Feels Like: ${Math.round(currentWeatherData.current.main.feels_like)}°C</div>
-                <div class="mb-1">💧 Humidity: ${currentWeatherData.current.main.humidity}%</div>
-                <div class="mb-1">💨 Wind: ${currentWeatherData.current.wind.speed} m/s</div>
-                <div class="mb-1">👁️ Visibility: ${(currentWeatherData.current.visibility || 10000) / 1000} km</div>
-                <div class="mb-1">🌅 Sunrise: ${new Date(currentWeatherData.current.sys.sunrise * 1000).toLocaleTimeString()}</div>
-                <div class="mb-1">🌇 Sunset: ${new Date(currentWeatherData.current.sys.sunset * 1000).toLocaleTimeString()}</div>
-            </div>
-        `;
+            // Show map info panel (stays visible â€“ no auto tab-switch)
+            document.getElementById('mapClickInfo').classList.remove('hidden');
+            document.getElementById('mapWeatherContent').innerHTML = `
+                <div class="text-center col-span-2">
+                    <div class="text-2xl mb-2">${weatherIcons[currentWeatherData.current.weather[0].icon] || 'â˜€ï¸'}</div>
+                    <div class="text-white text-xl font-bold">${Math.round(currentWeatherData.current.main.temp)}Â°C</div>
+                    <div class="text-white/80">${currentWeatherData.current.name}, ${currentWeatherData.current.sys.country}</div>
+                    <div class="text-white/60">${currentWeatherData.current.weather[0].description}</div>
+                </div>
+                <div class="text-white text-center">
+                    <div class="mb-1">ðŸŒ¡ï¸ Feels Like: ${Math.round(currentWeatherData.current.main.feels_like)}Â°C</div>
+                    <div class="mb-1">ðŸ’§ Humidity: ${currentWeatherData.current.main.humidity}%</div>
+                    <div class="mb-1">ðŸ’¨ Wind: ${currentWeatherData.current.wind.speed} m/s</div>
+                    <div class="mb-1">ðŸ‘ï¸ Visibility: ${(currentWeatherData.current.visibility || 10000) / 1000} km</div>
+                    <div class="mb-1">ðŸŒ… Sunrise: ${new Date(currentWeatherData.current.sys.sunrise * 1000).toLocaleTimeString()}</div>
+                    <div class="mb-1">ðŸŒ‡ Sunset: ${new Date(currentWeatherData.current.sys.sunset * 1000).toLocaleTimeString()}</div>
+                </div>
+            `;
 
-        // Center map on clicked location
-        weatherMap.setView([lat, lng], 10);
-
-        // Switch to weather tab to show details
-        document.getElementById('tabWeather').click();
+            // Centre map on clicked location
+            weatherMap.setView([lat, lng], 10);
+        } catch (error) {
+            showError('Unable to fetch weather for the clicked location. Please try again.');
+        }
     });
 }
 
@@ -714,7 +736,6 @@ function setupTabNavigation() {
         document.getElementById('tabWeather').classList.add('bg-white/10', 'text-white/70');
         document.getElementById('tabWeather').classList.remove('bg-white/20', 'text-white');
 
-        document.getElementById('mapNav').classList.remove('hidden');
         document.getElementById('mapSection').classList.remove('hidden');
         document.getElementById('layerControls').classList.remove('hidden');
 
@@ -734,14 +755,14 @@ function setupTabNavigation() {
         document.getElementById('tabMap').classList.add('bg-white/10', 'text-white/70');
         document.getElementById('tabMap').classList.remove('bg-white/20', 'text-white');
 
-        document.getElementById('mapNav').classList.add('hidden');
         document.getElementById('mapSection').classList.add('hidden');
         document.getElementById('layerControls').classList.add('hidden');
 
-        // Show weather sections
-        document.getElementById('currentWeather').classList.remove('hidden');
-        document.getElementById('timeline').classList.remove('hidden');
-        document.getElementById('errorMessage').classList.remove('hidden');
+        // Only reveal weather sections when data is already loaded
+        if (currentWeatherData) {
+            document.getElementById('currentWeather').classList.remove('hidden');
+            document.getElementById('timeline').classList.remove('hidden');
+        }
 
         // Hide map click info when switching tabs
         document.getElementById('mapClickInfo').classList.add('hidden');
@@ -769,9 +790,6 @@ window.addEventListener('load', () => {
     // Setup tab navigation
     setupTabNavigation();
 
-    // Initialize map in background (will be positioned once loaded)
-    initWeatherMap();
-
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -798,4 +816,3 @@ window.addEventListener('load', () => {
 });
 
 
-(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'98ef158220b759cc',t:'MTc2MDUyODg3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();
